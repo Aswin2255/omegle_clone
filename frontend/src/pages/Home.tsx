@@ -1,16 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 function Home() {
+  const [username, setusername] = useState<string>("");
   const navigate = useNavigate();
   const onlinePlayers = 0; // Dummy count for now
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col">
       {/* Navbar */}
- <Navbar/>
+      <Navbar />
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-4">
@@ -43,11 +44,29 @@ function Home() {
             </div>
           </div>
 
+          {/* Username Input */}
+          <div className="mb-8">
+            <div className="max-w-md mx-auto">
+              <input
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setusername(e.target.value)}
+                className="w-full px-6 py-4 text-lg text-white bg-white/10 backdrop-blur-md rounded-full border border-white/20 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+              />
+            </div>
+          </div>
+
           {/* Start Chat Button */}
           <div className="mb-12">
             <button
-              onClick={() => navigate("/chat")}
-              className="group relative inline-flex items-center justify-center px-12 py-6 text-xl font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-full hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-purple-500/25"
+              onClick={() => navigate(`/chat?username=${username}`)}
+              disabled={!username.trim()}
+              className={`group relative inline-flex items-center justify-center px-12 py-6 text-xl font-bold text-white rounded-full transition-all duration-300 shadow-2xl ${
+                username.trim()
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 hover:shadow-purple-500/25 cursor-pointer"
+                  : "bg-gray-600 cursor-not-allowed opacity-50"
+              }`}
             >
               <svg
                 className="w-6 h-6 mr-3 group-hover:rotate-12 transition-transform duration-300"
@@ -63,16 +82,16 @@ function Home() {
                 />
               </svg>
               Start Chatting
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+              {username.trim() && (
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+              )}
             </button>
           </div>
-
-    
         </div>
       </main>
 
       {/* Footer */}
- <Footer/>
+      <Footer />
     </div>
   );
 }

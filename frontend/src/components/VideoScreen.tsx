@@ -1,14 +1,14 @@
 import React from 'react'
 import MessageDisplay from './MessageDisplay'
 
-function VideoScreen() {
+function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,message,setMessage} : any) {
   return (
     <div className="flex m-5 gap-5 ">
     {/* User Video Area */}
     <div className=" w-1/3 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl aspect-square flex items-center justify-center relative overflow-hidden">
       <div className="text-center">
         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <span className="text-2xl font-bold text-gray-600">U</span>
+          <span className="text-2xl font-bold text-gray-600">{username.charAt(0)}</span>
         </div>
         <div className="w-3 h-3 bg-white rounded-full mx-auto"></div>
       </div>
@@ -47,12 +47,13 @@ function VideoScreen() {
         </button>
       </div>
     </div>
-
-    {/* Stranger Video Area */}
-    <div className="w-1/3 bg-gray-800 rounded-2xl aspect-square flex items-center justify-center relative overflow-hidden">
+{
+  partner ? <>
+      {/* Stranger Video Area */}
+      <div className="w-1/3 bg-gray-800 rounded-2xl aspect-square flex items-center justify-center relative overflow-hidden">
       <div className="text-center">
         <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <span className="text-2xl font-bold text-white">S</span>
+          <span className="text-2xl font-bold text-white">{partner.name.charAt(0)}</span>
         </div>
         <div className="w-3 h-3 bg-gray-400 rounded-full mx-auto"></div>
       </div>
@@ -92,8 +93,13 @@ function VideoScreen() {
       </div>
     </div>
 
+  </> : <>
+  <h1>SEARCHING FOR A PARTNER.........</h1>
+  </>
+}
+
     <div className='w-1/3'>
-    <MessageDisplay/>
+    <MessageDisplay allmessages={allmessages}  />
     </div>
 
   </div>

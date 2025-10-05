@@ -1,11 +1,20 @@
 import React from "react";
 
-export default function MessageDisplay() {
+export default function MessageDisplay({allmessages} : any) {
+  
   return (
     <div className="">
+    
       <div className="max-w-4xl mx-auto px-4">
         <div className="space-y-3">
           {/* Sample User Messages */}
+          {
+            allmessages.map((message: any,index: number)=>{
+              return (
+                <div key={index}>{message.user}: {message.message}</div>
+              )
+            })
+          }
           <div className="flex justify-end">
             <div className="bg-blue-500 text-white px-4 py-2 rounded-lg max-w-xs">
               <p className="text-sm">Hello! How are you doing today?</p>

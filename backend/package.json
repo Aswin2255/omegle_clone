@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start" : "node dist/index.js",
-    "build" : "tsc",
-    "dev" : "concurrently \"tsc --watch\" \"node dist/index.js\"",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "concurrently \"tsc --watch\" \"nodemon dist/index.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,6 +15,7 @@
   "packageManager": "pnpm@10.18.0",
   "dependencies": {
     "@types/ws": "^8.18.1",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "ws": "^8.18.3"
   }
 }
