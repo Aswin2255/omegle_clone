@@ -1,0 +1,10 @@
+/dist
+/node_modules
+/public
+/src
+/test
+/test-results
+/test-results.xml
+/test-results.xml.gz
+/test-results.xml.gz.base64
+/test-results.xml.gz.base64.gz
