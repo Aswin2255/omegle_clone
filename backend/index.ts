@@ -25,8 +25,8 @@ class RoomManager {
   constructor(){
     
   }
-  findRoom(roomId: number){
-    return this.rooms.get(roomId.toString());
+  findRoom(roomId: string){
+    return this.rooms.get(roomId);
   }
   addUser(ws: WebSocket){
     console.log('addUser');
@@ -136,28 +136,39 @@ wss.on("connection", function connection(ws) {
     if(message === "user-joined"){
       roomManager.addUser(ws);
     }
-    else if (message === "create-answer"){
-      console.log('create-answer');
-      const roomManager = new RoomManager();
+    else if (message === "ask-to-create-answer"){
       const {sdp, roomId} = recievedMsg;
+      
       const findRoom = roomManager.findRoom(roomId);
-      console.log(findRoom);
       if(findRoom){
         findRoom?.reciever?.send(JSON.stringify({message: "create-answer",roomId: roomId, sdp: sdp}));
       }
+      else{
+        console.log("Room not found" + message);
+        //console.log(recievedMsg);
+      }
     }
     else if (message === "answer-created"){
-      console.log('answer-created');
+  
       const {sdp, roomId} = recievedMsg;
-      const roomManager = new RoomManager();
       const findRoom = roomManager.findRoom(roomId);
       if(findRoom){
         findRoom?.sender?.send(JSON.stringify({message: "answer-recieved",roomId: roomId, sdp: sdp}));
       }
+      else{
+        console.log("Room not found" + message);
+      }
     }
     else if (message === "candidate-created"){
-      console.log('candidate-created');
-      console.log(recievedMsg)
+      const {candidate, roomId, userRole} = recievedMsg;
+      const findRoom = roomManager.findRoom(roomId);
+      const usertoSend = userRole === "sender" ? "reciever" : "sender";
+      if(findRoom){
+          findRoom?.[usertoSend]?.send(JSON.stringify({message: "add-ice-candidate", candidate: candidate, roomId: roomId}));
+      }
+      
+      
+      
     }
     // when a loby message is recieved
     // need to call room manager

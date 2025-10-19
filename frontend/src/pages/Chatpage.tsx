@@ -21,6 +21,18 @@ function Chatpage() {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const senderVideoRef = useRef<HTMLVideoElement | null>(null);
   const recieverVideoRef = useRef<HTMLVideoElement | null>(null);
+  const roomIdRef = useRef<number | null>(null);
+  const userRoleRef = useRef<string | null>(null);
+
+  const audioManagement = ()=>{
+    console.log("Audio management");
+    const stream = streamRef.current;
+    if(stream){
+      stream.getAudioTracks().forEach((track) => {
+        track.enabled = false;
+      });
+    }
+  }
 
   
 
@@ -53,7 +65,7 @@ function Chatpage() {
      //getting the media stream
      const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
-      audio: false,
+      audio: true,
     });
     streamRef.current = stream;
      let socket = new WebSocket('ws://localhost:8080');
@@ -70,18 +82,25 @@ function Chatpage() {
       
       let message = {
         user: userDetails,
-        message: 'user-joinedchat'
+        message: 'user-joined'
       }
       sendMessage(message);
     }
     pc.onicecandidate = (event)=>{
-      if(event.candidate){
-        socket.send(JSON.stringify({message: "candidate-created", candidate: event.candidate}));
+      let roomId = roomIdRef.current;
+      let userRole = userRoleRef.current;
+      if(roomId && userRole){
+        socket.send(JSON.stringify({message: "candidate-created", candidate: event.candidate, roomId: roomId, userRole: userRole}));
       }
     }
     pc.ontrack = (event)=>{
-      if(event.track){
-        console.log('Track added', event.track);
+      // Set the stream directly from the event
+      if (recieverVideoRef?.current) {
+        if (!recieverVideoRef.current.srcObject) {
+          recieverVideoRef.current.srcObject = event.streams[0];
+        }
+        console.log("Setting receiver video stream");
+        recieverVideoRef.current.play().catch(e => console.error("Play error:", e));
       }
     }
     pc.oniceconnectionstatechange = ()=>{
@@ -97,11 +116,14 @@ function Chatpage() {
         setLobby(true);
       }
       else if (message === 'waiting-for-partner'){
+
         setLobby(true);
       }
       else if (message === "create-offer"){
         const {roomId} = parsedData;
         const pc = pcRef.current;
+        roomIdRef.current = roomId;
+        userRoleRef.current = 'sender';
         const stream = streamRef.current;
         if(pc && stream){
           stream.getTracks().forEach((track) => {
@@ -109,13 +131,15 @@ function Chatpage() {
           });
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-          socket.send(JSON.stringify({message: "create-answer", sdp: pc.localDescription, roomId: roomId}));
+          socket.send(JSON.stringify({message: "ask-to-create-answer", sdp: pc.localDescription, roomId: roomId}));
         }
 
 
       }
       else if (message === "create-answer"){
         const {sdp, roomId} = parsedData;
+        roomIdRef.current = roomId;
+        userRoleRef.current = 'reciever';
         const pc = pcRef.current;
         const stream = streamRef.current;
         if(pc && stream){
@@ -133,6 +157,13 @@ function Chatpage() {
         const pc = pcRef.current;
         if(pc){
           pc.setRemoteDescription(sdp)
+        }
+      }
+      else if (message === "add-ice-candidate"){
+        const {candidate} = parsedData;
+        const pc = pcRef.current;
+        if(pc){
+          pc.addIceCandidate(candidate);
         }
       }
       else if(message === 'user-connected'){
@@ -189,7 +220,7 @@ function Chatpage() {
   },[]);
 
   return (
-<Chatscreen partner={partner} setPartner={setPartner} username={username} allmessages={allmessages} setAllmessages={setAllmessages} message={message} setMessage={setMessage} messageToServer={messageToServer} senderVideoRef={senderVideoRef} recieverVideoRef={recieverVideoRef} />
+<Chatscreen partner={partner} setPartner={setPartner} username={username} allmessages={allmessages} setAllmessages={setAllmessages} message={message} setMessage={setMessage} messageToServer={messageToServer} senderVideoRef={senderVideoRef} recieverVideoRef={recieverVideoRef} audioManagement={audioManagement} />
   )
 }
 

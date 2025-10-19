@@ -1,7 +1,7 @@
 import React from 'react'
 import MessageDisplay from './MessageDisplay'
 
-function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,message,setMessage,senderVideoRef,recieverVideoRef} : any) {
+function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,message,setMessage,senderVideoRef,recieverVideoRef,audioManagement} : any) {
   return (
     <div className="flex m-5 gap-5 ">
     {/* User Video Area */}
@@ -34,7 +34,7 @@ function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,mes
             />
           </svg>
         </button>
-        <button className="w-10 h-10 bg-gray-700 hover:bg-gray-800 rounded-full flex items-center justify-center transition-colors">
+        <button onClick={audioManagement} className="w-10 h-10 bg-gray-700 hover:bg-gray-800 rounded-full flex items-center justify-center transition-colors">
           <svg
             className="w-5 h-5 text-white"
             fill="none"
@@ -52,7 +52,7 @@ function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,mes
       </div>
     </div>
 {
-  partner && recieverVideoRef ? <>
+  recieverVideoRef ? <>
       {/* Stranger Video Area */}
       <div className="w-1/3 bg-gray-800 rounded-2xl aspect-square flex items-center justify-center relative overflow-hidden">
       {
