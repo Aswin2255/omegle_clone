@@ -1,17 +1,21 @@
 import React from 'react'
 import MessageDisplay from './MessageDisplay'
 
-function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,message,setMessage} : any) {
+function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,message,setMessage,senderVideoRef,recieverVideoRef} : any) {
   return (
     <div className="flex m-5 gap-5 ">
     {/* User Video Area */}
     <div className=" w-1/3 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl aspect-square flex items-center justify-center relative overflow-hidden">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <span className="text-2xl font-bold text-gray-600">{username.charAt(0)}</span>
-        </div>
-        <div className="w-3 h-3 bg-white rounded-full mx-auto"></div>
+    {
+      senderVideoRef ? <video ref={senderVideoRef} className="w-full h-full object-cover" /> :    <div className="text-center">
+      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <span className="text-2xl font-bold text-gray-600">{username.charAt(0)}</span>
       </div>
+      <div className="w-3 h-3 bg-white rounded-full mx-auto"></div>
+    </div>
+    }
+   
+   
 
       {/* Video Controls Overlay */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
@@ -48,15 +52,17 @@ function VideoScreen({partner,setPartner,username,allmessages,setAllmessages,mes
       </div>
     </div>
 {
-  partner ? <>
+  partner && recieverVideoRef ? <>
       {/* Stranger Video Area */}
       <div className="w-1/3 bg-gray-800 rounded-2xl aspect-square flex items-center justify-center relative overflow-hidden">
-      <div className="text-center">
+      {
+        recieverVideoRef ? <video ref={recieverVideoRef} className="w-full h-full object-cover" /> :    <div className="text-center">
         <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
           <span className="text-2xl font-bold text-white">{partner.name.charAt(0)}</span>
         </div>
         <div className="w-3 h-3 bg-gray-400 rounded-full mx-auto"></div>
       </div>
+      }
 
       {/* Video Controls Overlay */}
       <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">

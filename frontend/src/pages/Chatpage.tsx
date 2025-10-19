@@ -16,6 +16,11 @@ function Chatpage() {
   const [partner, setPartner] = useState<{id: string, name: string, roomId: string} | null>(null);
   const [allmessages, setAllmessages] = useState<MESSAGE[]>([]);
   const [message, setMessage] = useState<string>('');
+  const [lobby, setLobby] = useState<boolean>(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const senderVideoRef = useRef<HTMLVideoElement | null>(null);
+  const recieverVideoRef = useRef<HTMLVideoElement | null>(null);
 
   
 
@@ -44,9 +49,17 @@ function Chatpage() {
     sendMessage(payload);
   }
 
-  const initialWebsocket = ()=>{
+  const initialWebsocket = async ()=>{
+     //getting the media stream
+     const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
+    });
+    streamRef.current = stream;
      let socket = new WebSocket('ws://localhost:8080');
      socketRef.current = socket; 
+     const pc = new RTCPeerConnection();
+     pcRef.current = pc;
     socket.onopen = ()=>{
       console.log('Connected to server');
       let userDetails = {
@@ -57,14 +70,72 @@ function Chatpage() {
       
       let message = {
         user: userDetails,
-        message: 'user-joined'
+        message: 'user-joinedchat'
       }
       sendMessage(message);
     }
-    socket.onmessage = (event)=>{
+    pc.onicecandidate = (event)=>{
+      if(event.candidate){
+        socket.send(JSON.stringify({message: "candidate-created", candidate: event.candidate}));
+      }
+    }
+    pc.ontrack = (event)=>{
+      if(event.track){
+        console.log('Track added', event.track);
+      }
+    }
+    pc.oniceconnectionstatechange = ()=>{
+      console.log('Ice connection state changed', pc.iceConnectionState);
+      if(pc.iceConnectionState === 'connected'){
+        console.log('Connected to the internet');
+      }
+    }
+    socket.onmessage = async (event)=>{
       const parsedData = tryParseJSON(event.data);
-      console.log(parsedData)
-      if(parsedData.message === 'user-connected'){
+      const message = parsedData.message;
+      if(message === 'joined-room'){
+        setLobby(true);
+      }
+      else if (message === 'waiting-for-partner'){
+        setLobby(true);
+      }
+      else if (message === "create-offer"){
+        const {roomId} = parsedData;
+        const pc = pcRef.current;
+        const stream = streamRef.current;
+        if(pc && stream){
+          stream.getTracks().forEach((track) => {
+            pc.addTrack(track, stream);
+          });
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          socket.send(JSON.stringify({message: "create-answer", sdp: pc.localDescription, roomId: roomId}));
+        }
+
+
+      }
+      else if (message === "create-answer"){
+        const {sdp, roomId} = parsedData;
+        const pc = pcRef.current;
+        const stream = streamRef.current;
+        if(pc && stream){
+          pc.setRemoteDescription(sdp)
+          stream.getTracks().forEach((track) => {
+            pc.addTrack(track, stream);
+          });
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.send(JSON.stringify({message: "answer-created", sdp: pc.localDescription, roomId: roomId}));
+        }
+      }
+      else if (message === "answer-recieved"){
+        const {sdp} = parsedData;
+        const pc = pcRef.current;
+        if(pc){
+          pc.setRemoteDescription(sdp)
+        }
+      }
+      else if(message === 'user-connected'){
         const {roomId} = parsedData;
         const {id,name} = parsedData.partner;
         const partnerDetails = {
@@ -75,7 +146,8 @@ function Chatpage() {
         setPartner(partnerDetails);
         console.log('User connected', partnerDetails);
       }
-      if(parsedData.message === 'recieve-message'){
+      
+      else if(parsedData.message === 'recieve-message'){
         //store the recieved message in allmessages it include the user who sends and the message
         const {user,usermessage} = parsedData;
         const messageDetails = {
@@ -85,12 +157,17 @@ function Chatpage() {
         console.log(messageDetails)
         setAllmessages([...allmessages, messageDetails]);
       }
+      
     }
     socket.onclose = ()=>{
       console.log('Disconnected from server');
     }
     socket.onerror = (error)=>{
       console.log('Error', error);
+    }
+    if (senderVideoRef?.current) {
+      senderVideoRef.current.srcObject = streamRef.current;
+      senderVideoRef.current.play();
     }
   }
   const sendMessage = (message: any)=>{
@@ -110,8 +187,9 @@ function Chatpage() {
       }
     }
   },[]);
+
   return (
-<Chatscreen partner={partner} setPartner={setPartner} username={username} allmessages={allmessages} setAllmessages={setAllmessages} message={message} setMessage={setMessage} messageToServer={messageToServer} />
+<Chatscreen partner={partner} setPartner={setPartner} username={username} allmessages={allmessages} setAllmessages={setAllmessages} message={message} setMessage={setMessage} messageToServer={messageToServer} senderVideoRef={senderVideoRef} recieverVideoRef={recieverVideoRef} />
   )
 }
 

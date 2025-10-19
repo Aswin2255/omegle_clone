@@ -5,6 +5,63 @@ console.log("Server is running on port  8080");
 
 let GLOBAL_ROOM_ID = 0;
 
+class Room {
+  id: string;
+  sender : WebSocket | null;
+  reciever : WebSocket | null;
+  constructor(id: string){
+    this.id = id;
+    this.sender = null;
+    this.reciever = null;
+  }
+  
+
+}
+
+class RoomManager {
+  private globalRoomId : number = 0;
+  private rooms : Map<string, Room> = new Map();
+  private userques : WebSocket[] = [];
+  constructor(){
+    
+  }
+  findRoom(roomId: number){
+    return this.rooms.get(roomId.toString());
+  }
+  addUser(ws: WebSocket){
+    console.log('addUser');
+    console.log(this.userques.length);
+    if(this.userques.length){
+      const user = this.userques.shift();
+      if(user){
+        const roomId = this.globalRoomId + 1;
+        const room = new Room(roomId.toString());
+        room.sender = user;
+        room.reciever = ws;
+        this.rooms.set(room.id, room);
+        this.globalRoomId = roomId;
+        console.log('user joined the room', room.id);
+        room.sender.send(JSON.stringify({message: "create-offer",roomId: room.id}))
+        room.reciever.send(JSON.stringify({message:"joined-room"}))
+       
+      }
+    
+    }
+    else {
+      console.log('user joined the que Waiting for a partner');
+      this.userques.push(ws);
+      //console.log(this.userques);
+      ws.send(JSON.stringify({message: "waiting-for-partner"}))
+      
+    }
+    
+  }
+  removeUser(id: string){
+    this.rooms.delete(id);
+}
+}
+
+
 interface ROOM {
   roomId: number;
   users: {
@@ -22,6 +79,7 @@ interface USER {
 
 const userQue: USER[] = [];
 const rooms: ROOM[] = [];
+
 
 const createUser = (name: string, id: string, socket: WebSocket) => {
   userQue.push({ name, id, socket });
@@ -66,25 +124,56 @@ const createRoom = () => {
   }
 };
 
+const roomManager = new RoomManager();
+
 wss.on("connection", function connection(ws) {
   ws.on("error", console.error);
 
   ws.on("message", function message(data) {
     let recievedMsg = JSON.parse(data.toString());
-    //console.log(recievedMsg)
-    //fix the problem in receiver id there is some problem debug it
-    const { user, message,usermessage,roomId,reciever} = recievedMsg;
-    //console.log(user,message)
-
-    if (message === "user-joined") {
-      createUser(user.name, user.id, ws);
-      //console.log(userQue)
-      createRoom();
-      //console.log(rooms[0].users)
+    const {message} = recievedMsg;
+    console.log(message);
+    if(message === "user-joined"){
+      roomManager.addUser(ws);
     }
-    if (message === "send-message") {
-      sendMessage(user,reciever,usermessage,roomId)
+    else if (message === "create-answer"){
+      console.log('create-answer');
+      const roomManager = new RoomManager();
+      const {sdp, roomId} = recievedMsg;
+      const findRoom = roomManager.findRoom(roomId);
+      console.log(findRoom);
+      if(findRoom){
+        findRoom?.reciever?.send(JSON.stringify({message: "create-answer",roomId: roomId, sdp: sdp}));
+      }
     }
+    else if (message === "answer-created"){
+      console.log('answer-created');
+      const {sdp, roomId} = recievedMsg;
+      const roomManager = new RoomManager();
+      const findRoom = roomManager.findRoom(roomId);
+      if(findRoom){
+        findRoom?.sender?.send(JSON.stringify({message: "answer-recieved",roomId: roomId, sdp: sdp}));
+      }
+    }
+    else if (message === "candidate-created"){
+      console.log('candidate-created');
+      console.log(recievedMsg)
+    }
+    // when a loby message is recieved
+    // need to call room manager
+    // inside room manger check the que . lenght is ther we will do shift and take the first participant and create a room with him 
+    //else we will push the participant to the room and send a message like waiting for a partner
+    //room creation logic will be in room manager
+    //we will create a room id
+    //we eill store the sender and reciever websocket
+    //store the roomid and the room details as a map
+    //sends the message that the user has joiined the room with room id 
+    // sender will sent an offer from offer from frontend with room id
+    // signaling server recieves it and send to the reciever to create answer
+    //reciever acces the option set the remote description and send the answer and set the local description
+    // singlaing server sends the ansewer to sneder it add the remote description 
+    // when a user click on leave a ws will triger remove room will be destoyed and both the user will add to the que again
+    
   });
 
   ws.send("something");
