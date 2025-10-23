@@ -1,5 +1,6 @@
 import React from "react";
 import MessageDisplay from "./MessageDisplay";
+import usechatStore from "../zustand/store";
 
 function VideoScreen({
   partner,
@@ -9,13 +10,11 @@ function VideoScreen({
   setAllmessages,
   message,
   setMessage,
-  senderVideoRef,
-  recieverVideoRef,
   audioManagement,
   videoManagement,
-  audioEnabled,
-  videoEnabled,
 }: any) {
+
+  const {senderVideoRef,videoEnabled,audioEnabled,recieverVideoRef,recieverAudio,recieverVideo} = usechatStore()
   
   return (
     <div className="flex m-5 gap-5 ">
@@ -62,11 +61,14 @@ function VideoScreen({
        
          
           </button>
-          <button
+      
+              <button
             onClick={audioManagement}
             className="w-10 h-10 bg-gray-700 hover:bg-gray-800 rounded-full flex items-center justify-center transition-colors"
           >
-            <svg
+            {
+              audioEnabled ? <>
+                 <svg
               className="w-5 h-5 text-white"
               fill="none"
               stroke="currentColor"
@@ -79,7 +81,12 @@ function VideoScreen({
                 d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
               />
             </svg>
+              </> : <p>No Audio</p>
+            }
+         
           </button>
+     
+        
         </div>
       </div>
       {recieverVideoRef ? (
@@ -104,8 +111,11 @@ function VideoScreen({
 
             {/* Video Controls Overlay */}
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-              <button className="w-10 h-10 bg-gray-600 hover:bg-gray-700 rounded-full flex items-center justify-center transition-colors">
-                <svg
+          
+                <button className="w-10 h-10 bg-gray-600 hover:bg-gray-700 rounded-full flex items-center justify-center transition-colors">
+                  {
+                    recieverVideo ? <>
+                      <svg
                   className="w-5 h-5 text-white"
                   fill="none"
                   stroke="currentColor"
@@ -118,8 +128,14 @@ function VideoScreen({
                     d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                   />
                 </svg>
+                    </> : <p>No Video</p>
+                  }
+              
               </button>
-              <button className="w-10 h-10 bg-gray-600 hover:bg-gray-700 rounded-full flex items-center justify-center transition-colors">
+         
+            {
+              recieverAudio ? <>
+                <button className="w-10 h-10 bg-gray-600 hover:bg-gray-700 rounded-full flex items-center justify-center transition-colors">
                 <svg
                   className="w-5 h-5 text-white"
                   fill="none"
@@ -134,6 +150,10 @@ function VideoScreen({
                   />
                 </svg>
               </button>
+              </> : <p>No Audio</p>
+            }
+            
+            
             </div>
           </div>
         </>

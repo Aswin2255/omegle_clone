@@ -170,6 +170,41 @@ wss.on("connection", function connection(ws) {
       
       
     }
+    else if(message === "audio-disconnected"){
+      const {roomid,userrole} = recievedMsg
+      const findRoom = roomManager.findRoom(roomid)
+      const usertoSend = userrole === "sender" ? "reciever" : "sender";
+      if(findRoom){
+        findRoom?.[usertoSend]?.send(JSON.stringify({message:"partner-audio-disconnected"}))
+      }
+
+    }
+    else if(message === "audio-connected"){
+      const {roomid,userrole} = recievedMsg
+      const findRoom = roomManager.findRoom(roomid)
+      const usertoSend = userrole === "sender" ? "reciever" : "sender";
+      if(findRoom){
+        findRoom?.[usertoSend]?.send(JSON.stringify({message:"partner-audio-connected"}))
+      }
+
+    }
+    else if(message === "video-disconnected"){
+      const {roomid,userrole} = recievedMsg
+      const findRoom = roomManager.findRoom(roomid)
+      const usertoSend = userrole === "sender" ? "reciever" : "sender";
+      if(findRoom){
+        findRoom?.[usertoSend]?.send(JSON.stringify({message:"partner-video-disconnected"}))
+      }
+    }
+    else if(message === "video-connected"){
+      const {roomid,userrole} = recievedMsg
+      const findRoom = roomManager.findRoom(roomid)
+      const usertoSend = userrole === "sender" ? "reciever" : "sender";
+      if(findRoom){
+        findRoom?.[usertoSend]?.send(JSON.stringify({message:"partner-video-connected"}))
+      }
+
+    }
     // when a loby message is recieved
     // need to call room manager
     // inside room manger check the que . lenght is ther we will do shift and take the first participant and create a room with him 

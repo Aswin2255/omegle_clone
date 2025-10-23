@@ -1,13 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Chatscreen from "../components/Chatscreen";
 import { useSearchParams } from "react-router-dom";
+import usechatStore from "../zustand/store";
 
 function Chatpage() {
   interface MESSAGE {
     user: any;
     message: string;
   }
-  const socketRef = useRef<WebSocket | null>(null);
   const [search, setsearch] = useSearchParams();
   const username = search.get("username");
   const [partner, setPartner] = useState<{
@@ -18,8 +18,7 @@ function Chatpage() {
   const [allmessages, setAllmessages] = useState<MESSAGE[]>([]);
   const [message, setMessage] = useState<string>("");
   const [lobby, setLobby] = useState<boolean>(false);
-  const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
-  const [videoEnabled, setVideoEnabled] = useState<boolean>(true);
+  const socketRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const senderVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -27,92 +26,83 @@ function Chatpage() {
   const roomIdRef = useRef<number | null>(null);
   const userRoleRef = useRef<string | null>(null);
 
+  //zustand store
+  const {
+    allMessages,
+    currentMessage,
+    audioEnabled,
+    videoEnabled,
+    recieverAudio,
+    recieverVideo,
+    
+    setAllMessages,
+    setCurrentMessage,
+    setAudioEnabled,
+    setVideoEnabled,
+    setRecieverAudio,
+    setRecieverVideo,
+    setSocketRef,
+    setStreamRef,
+    setPcRef,
+    setSenderVideoRef,
+    setRecieverVideoRef,
+    setRoomIdRef,
+    setUserRoleRef,
+  } = usechatStore();
+
+  const setRef = ()=>{
+    setSocketRef(socketRef)
+    setStreamRef(streamRef);
+    setPcRef(pcRef);
+    setSenderVideoRef(senderVideoRef);
+    setRecieverVideoRef(recieverVideoRef);
+    setRoomIdRef(roomIdRef);
+    setUserRoleRef(userRoleRef);
+  }
+
   const audioManagement = () => {
     console.log("Audio management");
     const stream = streamRef.current;
-    setAudioEnabled(!audioEnabled);
-    console.log(!audioEnabled);
+
     if (stream) {
+      // Simply toggle the audio tracks
       stream.getAudioTracks().forEach((track) => {
-        track.enabled = !audioEnabled;
+        track.enabled = !track.enabled; // This is the key line!
       });
+
+      setAudioEnabled(!audioEnabled);
+      const roomId = roomIdRef.current;
+      const userRole = userRoleRef.current;
+      const previousAudioState = audioEnabled;
+      let message = {
+        message: previousAudioState ? "audio-disconnected" : "audio-connected",
+        roomid: roomId,
+        userrole: userRole,
+      };
+      sendMessage(message);
     }
   };
 
-  const videoManagement = async (enabled: boolean) => {
-    try {
-      const stream = streamRef.current;
-      const pc = pcRef.current;
-      // Find the video sender once; keep it alive to avoid renegotiation
-      let videoSender =
-        pc?.getSenders().find((s) => s.track?.kind === "video") ||
-        pc
-          ?.getTransceivers()
-          .find(
-            (t) =>
-              t.sender &&
-              (t.sender.track?.kind === "video" ||
-                t.receiver.track?.kind === "video")
-          )?.sender;
-      setVideoEnabled(!enabled);
-      if (!enabled) {
-        //turn on the video
-        const newStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: audioEnabled,
-        });
+  const videoManagement = () => {
+    console.log("Video management");
+    const stream = streamRef.current;
 
-        //stop old sream
-        stream?.getTracks().forEach((track) => track.stop());
+    if (stream) {
+      // Simply toggle the video tracks
+      stream.getVideoTracks().forEach((track) => {
+        track.enabled = !videoEnabled;
+      });
 
-        //update the new stream ref
-        streamRef.current = newStream;
-
-        //update sender video element
-        if (senderVideoRef.current) {
-          senderVideoRef.current.srcObject = newStream;
-          senderVideoRef.current.play();
-        }
-
-        //re-add track to peer connection
-        const pc = pcRef.current;
-        if (pc) {
-          //removing old video tracks from peer connection
-          const senderTrack = pc.getSenders();
-          senderTrack.forEach((sender) => {
-            if (sender.track && sender.track.kind === "video") {
-              pc.removeTrack(sender);
-            }
-          });
-        }
-        //add new video tracks
-        newStream.getVideoTracks().forEach((track) => {
-          pc?.addTrack(track, newStream);
-        });
-      } else {
-        //stop video track completely
-        stream?.getVideoTracks().forEach((track) => {
-          track.stop();
-          stream.removeTrack(track);
-        });
-        if (videoSender) {
-          await videoSender.replaceTrack(null);
-        }
-        //create new stream with only audio tracks
-
-        // Store the new stream
-        streamRef.current = stream;
-
-        // Update the video element
-        if (senderVideoRef.current) {
-          senderVideoRef.current.srcObject = stream;
-          senderVideoRef.current.muted = true;
-        }
-
-        
-      }
-    } catch (error) {
-      console.log(error);
+      setVideoEnabled(!videoEnabled);
+      const roomId = roomIdRef.current;
+      const userRole = userRoleRef.current;
+      const previousVideoState = videoEnabled;
+      let message = {
+        message: previousVideoState ? "video-disconnected" : "video-connected",
+        roomid: roomId,
+        userrole: userRole,
+      };
+      sendMessage(message);
     }
   };
 
@@ -185,7 +175,7 @@ function Chatpage() {
         if (!recieverVideoRef.current.srcObject) {
           recieverVideoRef.current.srcObject = event.streams[0];
         }
-        console.log("Setting receiver video stream");
+
         recieverVideoRef.current
           .play()
           .catch((e) => console.error("Play error:", e));
@@ -276,6 +266,14 @@ function Chatpage() {
         };
         console.log(messageDetails);
         setAllmessages([...allmessages, messageDetails]);
+      } else if (message === "partner-audio-disconnected") {
+        setRecieverAudio(false);
+      } else if (message === "partner-audio-connected") {
+        setRecieverAudio(true);
+      } else if (message === "partner-video-disconnected") {
+        setRecieverVideo(false);
+      } else if (message === "partner-video-connected") {
+        setRecieverVideo(true);
       }
     };
     socket.onclose = () => {
@@ -297,6 +295,7 @@ function Chatpage() {
     }
   };
   useEffect(() => {
+    setRef();
     initialWebsocket();
     return () => {
       const socket = socketRef.current;
@@ -322,6 +321,8 @@ function Chatpage() {
       videoManagement={videoManagement}
       audioEnabled={audioEnabled}
       videoEnabled={videoEnabled}
+      recieverAudio={recieverAudio}
+      recieverVideo={recieverVideo}
     />
   );
 }
