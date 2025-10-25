@@ -1,8 +1,14 @@
 import type { RefObject } from "react";
 import { create } from "zustand";
 
+interface MESSAGE {
+    role: "sender" | "reciever";
+    user: any;
+    message: string;
+  }
+
 type State = {
-    allMessages : any[];
+    allMessages : MESSAGE[];
     currentMessage : string;
     audioEnabled : boolean;
     videoEnabled : boolean;
@@ -19,7 +25,7 @@ type State = {
 }
 
 type Action = {
-    setAllMessages : (messages : any[]) => void;
+    setAllMessages: (messages: MESSAGE[] | ((prev: MESSAGE[]) => MESSAGE[])) => void;
     setCurrentMessage : (message : string) => void;
     setAudioEnabled : (enabled : boolean) => void;
     setVideoEnabled : (enabled : boolean) => void;
@@ -50,7 +56,12 @@ const usechatStore = create<State & Action>((set)=>({
     recieverVideoRef : null,
     roomIDRef : null,
     userRoleRef : null,
-    setAllMessages : (messages : any[]) => set({allMessages : messages}),
+    setAllMessages: (messages) => 
+        set((state) => ({ 
+          allMessages: typeof messages === 'function' 
+            ? messages(state.allMessages)  // If function, call it with current state
+            : messages                      // If array, use it directly
+        })),
     setCurrentMessage : (message : string) => set({currentMessage : message}),
     setAudioEnabled : (enabled : boolean) => set({audioEnabled : enabled}),
     setVideoEnabled : (enabled : boolean) => set({videoEnabled : enabled}),

@@ -164,7 +164,7 @@ function VideoScreen({
       )}
 
       <div className="w-1/3">
-        <MessageDisplay allmessages={allmessages} />
+        <MessageDisplay  />
       </div>
     </div>
   );

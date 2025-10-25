@@ -132,7 +132,6 @@ wss.on("connection", function connection(ws) {
   ws.on("message", function message(data) {
     let recievedMsg = JSON.parse(data.toString());
     const {message} = recievedMsg;
-    console.log(message);
     if(message === "user-joined"){
       roomManager.addUser(ws);
     }
@@ -204,6 +203,14 @@ wss.on("connection", function connection(ws) {
         findRoom?.[usertoSend]?.send(JSON.stringify({message:"partner-video-connected"}))
       }
 
+    }
+    else if(message === "send-message"){
+      const {user,roomid,userrole,usermessage} = recievedMsg
+      const findRoom = roomManager.findRoom(roomid)
+      if(findRoom){
+        const usertoSend = userrole === "sender" ? "reciever" : "sender";
+        findRoom?.[usertoSend]?.send(JSON.stringify({message:"recieved-message",userDetails:user,roomid:roomid,userMessage:usermessage}))
+      }
     }
     // when a loby message is recieved
     // need to call room manager

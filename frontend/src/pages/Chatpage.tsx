@@ -5,9 +5,11 @@ import usechatStore from "../zustand/store";
 
 function Chatpage() {
   interface MESSAGE {
+    role: "sender" | "reciever";
     user: any;
     message: string;
   }
+
   const [search, setsearch] = useSearchParams();
   const username = search.get("username");
   const [partner, setPartner] = useState<{
@@ -15,7 +17,7 @@ function Chatpage() {
     name: string;
     roomId: string;
   } | null>(null);
-  const [allmessages, setAllmessages] = useState<MESSAGE[]>([]);
+
   const [message, setMessage] = useState<string>("");
   const [lobby, setLobby] = useState<boolean>(false);
   const socketRef = useRef<WebSocket | null>(null);
@@ -34,7 +36,7 @@ function Chatpage() {
     videoEnabled,
     recieverAudio,
     recieverVideo,
-    
+
     setAllMessages,
     setCurrentMessage,
     setAudioEnabled,
@@ -50,15 +52,15 @@ function Chatpage() {
     setUserRoleRef,
   } = usechatStore();
 
-  const setRef = ()=>{
-    setSocketRef(socketRef)
+  const setRef = () => {
+    setSocketRef(socketRef);
     setStreamRef(streamRef);
     setPcRef(pcRef);
     setSenderVideoRef(senderVideoRef);
     setRecieverVideoRef(recieverVideoRef);
     setRoomIdRef(roomIdRef);
     setUserRoleRef(userRoleRef);
-  }
+  };
 
   const audioManagement = () => {
     console.log("Audio management");
@@ -120,10 +122,14 @@ function Chatpage() {
   const messageToServer = (message: string) => {
     let senderDetails = JSON.parse(sessionStorage.getItem("localUser") || "{}");
     let recieverDetails = partner;
+    const roomId = roomIdRef.current;
+    const userRole = userRoleRef.current;
     let payload = {
       user: senderDetails,
       reciever: recieverDetails,
       message: "send-message",
+      roomid: roomId,
+      userrole: userRole,
       usermessage: message,
       roomId: recieverDetails?.roomId,
     };
@@ -257,15 +263,17 @@ function Chatpage() {
         };
         setPartner(partnerDetails);
         console.log("User connected", partnerDetails);
-      } else if (parsedData.message === "recieve-message") {
+      } else if (parsedData.message === "recieved-message") {
+        console.log("message recieved");
         //store the recieved message in allmessages it include the user who sends and the message
-        const { user, usermessage } = parsedData;
-        const messageDetails = {
-          user: user,
-          message: usermessage,
+        const { userDetails, userMessage } = parsedData;
+        const messageDetails: MESSAGE = {
+          user: userDetails.name,
+          message: userMessage,
+          role: "reciever",
         };
-        console.log(messageDetails);
-        setAllmessages([...allmessages, messageDetails]);
+        setAllMessages((prevMessages: MESSAGE[]) => [...prevMessages, messageDetails]);
+        //setAllMessages([...allMessages, messageDetails]);
       } else if (message === "partner-audio-disconnected") {
         setRecieverAudio(false);
       } else if (message === "partner-audio-connected") {
@@ -310,19 +318,11 @@ function Chatpage() {
       partner={partner}
       setPartner={setPartner}
       username={username}
-      allmessages={allmessages}
-      setAllmessages={setAllmessages}
       message={message}
       setMessage={setMessage}
       messageToServer={messageToServer}
-      senderVideoRef={senderVideoRef}
-      recieverVideoRef={recieverVideoRef}
       audioManagement={audioManagement}
       videoManagement={videoManagement}
-      audioEnabled={audioEnabled}
-      videoEnabled={videoEnabled}
-      recieverAudio={recieverAudio}
-      recieverVideo={recieverVideo}
     />
   );
 }

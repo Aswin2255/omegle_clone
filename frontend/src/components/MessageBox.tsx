@@ -1,6 +1,8 @@
 import React from "react";
+import usechatStore from "../zustand/store";
 
-export default function MessageBox({allmessages,setAllmessages,message,setMessage,username,messageToServer} : any) {
+export default function MessageBox({message,setMessage,username,messageToServer} : any) {
+  const {setAllMessages,allMessages} = usechatStore()
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
       <div className="max-w-4xl mx-auto flex items-center space-x-4">
@@ -19,7 +21,7 @@ export default function MessageBox({allmessages,setAllmessages,message,setMessag
             className="flex-1 bg-gray-100 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button onClick={() => {
-            setAllmessages([...allmessages, {user: username, message: message}]);
+           setAllMessages([...allMessages, {user: username, message: message,role : "sender"}]);
             messageToServer(message);
             setMessage('');
           }} className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
